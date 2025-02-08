@@ -1,0 +1,33 @@
+name: auto public release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 16 */5 * *'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: 1.触发器编译
+      if: steps.cacheHash.outputs.cache-hit != 'true'
+      uses: peter-evans/repository-dispatch@v2
+      with:
+        token: ${{ secrets.OP_ACTIONS_TRIGGER_PAT }}
+        event-type: Source Code Update
+
+    - name: 2.删除正workflow runs
+      uses: bigbugcc/delete-workflow-runs@main
+      with:
+        keep_minimum_runs: 1
+
+    - name: 6.删除旧的Releases
+      uses: dev-drprasad/delete-older-releases@v0.2.0
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      with:
+        keep_latest: 6
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
